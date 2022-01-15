@@ -1,0 +1,31 @@
+pcm.opensles {
+    type asym
+    playback.pcm {
+        type plug
+        slave {
+            pcm {
+                type file
+                file "/run/opensles_playback"
+                slave.pcm null
+                format raw
+            }
+            rate 44100
+            format s32_le
+            channels 2
+        }
+    }
+    capture.pcm {
+        type plug
+        slave {
+            pcm {
+                type file
+                file "/dev/null"
+                infile "/run/opensles_capture"
+                slave.pcm null
+            }
+            rate 44100
+            format s32_le
+            channels 1
+        }
+    }
+}
