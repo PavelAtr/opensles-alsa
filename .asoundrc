@@ -10,7 +10,7 @@ pcm.opensles {
                 format raw
             }
             rate 44100
-            format s32_le
+            format s16_le
             channels 2
         }
     }
@@ -24,7 +24,7 @@ pcm.opensles {
                 slave.pcm null
             }
             rate 44100
-            format s32_le
+            format s16_le
             channels 1
         }
     }

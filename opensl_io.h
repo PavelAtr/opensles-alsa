@@ -106,11 +106,11 @@ typedef struct opensl_stream {
   /* 
   Read a buffer from the OpenSL stream *p, of size samples. Returns the number of samples read.
   */
-  int android_AudioIn(OPENSL_STREAM *p, float *buffer,int size);
+  int android_AudioIn(OPENSL_STREAM *p, short *buffer,int size);
   /*
   Write a buffer to the OpenSL stream *p, of size samples. Returns the number of samples written.
   */
-  int android_AudioOut(OPENSL_STREAM *p, float *buffer,int size);
+  int android_AudioOut(OPENSL_STREAM *p, short *buffer,int size);
   /*
   Get the current IO block time in seconds
   */

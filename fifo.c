@@ -43,7 +43,7 @@ ssize_t read_wholy(int fd, void* buf, size_t size)
         readed += read(fd, buf + readed, size - (size_t)readed);
 //	printf("read %d\n", readed);
     }
-//    snprintf(playstr, readed + 1, "%s", buf);
+//    snprintf(playstr, readed + 1, "%s", (char*)buf);
 //    printf("%s\n", playstr);
     return readed;
 }
@@ -67,9 +67,9 @@ void* playback()
     printf("OpenSLES playback started\n");
     while(1) {
 
-        int size = read_wholy(playback_fd, playbuf, chunk * sizeof(float) * outchannels);
-        int ret = android_AudioOut(pOpenSL_stream, (float*) playbuf, chunk * outchannels);
-        printf("Playing chunk %d samples %d size %d fd %d\n", num++, ret, size, playback_fd);
+        int size = read_wholy(playback_fd, playbuf, chunk * sizeof(short) * outchannels);
+        int ret = android_AudioOut(pOpenSL_stream, (short*) playbuf, chunk * outchannels);
+//        printf("Playing chunk %d samples %d size %d fd %d\n", num++, ret, size, playback_fd);
     }
 
     return NULL;
@@ -86,9 +86,9 @@ void* capture()
     printf("OpenSLES capture started\n");
 
     while(1) {
-        int ret = android_AudioIn(pOpenSL_stream, recbuf, chunk * inchannels);
-        int size =write_wholy(capture_fd, recbuf, chunk * sizeof(float) * inchannels);
-        printf("Captiring chunk %d samples %d size %d\n", num++, ret, size);
+        int ret = android_AudioIn(pOpenSL_stream, (short*) recbuf, chunk * inchannels);
+        int size =write_wholy(capture_fd, recbuf, chunk * sizeof(short) * inchannels);
+//        printf("Captiring chunk %d samples %d size %d\n", num++, ret, size);
     }
 
     return NULL;
@@ -120,9 +120,9 @@ int main(int argc, char** argv)
         }
     }
 
-    if ((playbuf = malloc(chunk * sizeof(float) * outchannels)) == NULL)
+    if ((playbuf = malloc(chunk * sizeof(short) * outchannels)) == NULL)
         error(errno, errno, "Cannot malloc playbuf");
-    if ((recbuf = malloc(chunk * sizeof(float) * inchannels)) == NULL)
+    if ((recbuf = malloc(chunk * sizeof(short) * inchannels)) == NULL)
         error(errno, errno, "Cannot malloc recbuf");
 
     pOpenSL_stream = android_OpenAudioDevice(samplerate, inchannels, outchannels, chunk);
@@ -145,21 +145,6 @@ int main(int argc, char** argv)
         error(0, errnum, "Cannot join playback thread");
     if ((errnum = pthread_join(capture_id, NULL)) != 0)
         error(0, errnum, "Cannot join capture thread");
-
-/*    if (signal(SIGKILL, closeaudio) == SIG_ERR)
-         error(0, errno, "Cannot catch SIGKILL");
-
-    if (signal(SIGINT, closeaudio) == SIG_ERR)
-         error(0, errno, "Cannot catch SIGINT");
-
-    if (signal(SIGQUIT, closeaudio) == SIG_ERR)
-         error(0, errno, "Cannot catch SIGQUIT");
-
-    if (signal(SIGTERM, closeaudio) == SIG_ERR)
-         error(0, errno, "Cannot catch SIGTERM");
-
-    if (signal(SIGUSR1, closeaudio) == SIG_ERR)
-         error(0, errno, "Cannot catch SIGUSR1"); */
 
     while(loop)
 	sleep(1);

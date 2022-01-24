@@ -464,7 +464,7 @@ void bqRecorderCallback(SLAndroidSimpleBufferQueueItf bq, void *context)
 }
  
 // gets a buffer of size samples from the device
-int android_AudioIn(OPENSL_STREAM *p,float *buffer,int size){
+int android_AudioIn(OPENSL_STREAM* p, short* buffer,int size){
 
   short *inBuffer;
   int i, bufsamps, index;
@@ -481,7 +481,7 @@ int android_AudioIn(OPENSL_STREAM *p,float *buffer,int size){
   inBuffer = p->inputBuffer[p->currentInputBuffer];
 
   for(i=0; i < size; i++){
-    buffer[i] = (float) inBuffer[index++]*CONVMYFLT;
+    buffer[i] = inBuffer[index++];
   }
 
   p->inputBufferSize[p->currentInputBuffer] = 0;
@@ -502,7 +502,7 @@ void bqPlayerCallback(SLAndroidSimpleBufferQueueItf bq, void *context)
   int queueOutputBuffer = (p->currentOutputBuffer ?  0 : 1);
   int size = p->outputBufferSize[queueOutputBuffer];
   short *outBuffer = p->outputBuffer[queueOutputBuffer];
-  printf("Playback queue %d-buffer, samples %d\n", queueOutputBuffer, size);
+//  printf("Playback queue %d-buffer, samples %d\n", queueOutputBuffer, size);
 
   (*p->bqPlayerBufferQueue)->Enqueue(p->bqPlayerBufferQueue, 
 				 outBuffer, size * sizeof(short));
@@ -512,7 +512,7 @@ void bqPlayerCallback(SLAndroidSimpleBufferQueueItf bq, void *context)
 }
 
 // puts a buffer of size samples to the device
-int android_AudioOut(OPENSL_STREAM *p, float *buffer,int size){
+int android_AudioOut(OPENSL_STREAM* p, short* buffer,int size){
 
   short *outBuffer;
   int i, bufsamps, index;
@@ -531,7 +531,7 @@ int android_AudioOut(OPENSL_STREAM *p, float *buffer,int size){
 
 
   for(i=0; i < size; i++){
-    outBuffer[index++] = (short) (buffer[i]*CONV16BIT);
+    outBuffer[index++] = buffer[i];
   }
 
   p->outputBufferSize[p->currentOutputBuffer] = size;
