@@ -6,7 +6,7 @@ make
 
 cp .asoundrc ~/
 
-./opensles-alsa&
+./opensles-alsa -c 128&
 
 aplay frigian.wav
 
