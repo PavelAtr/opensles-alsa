@@ -52,7 +52,7 @@ ssize_t write_wholy(int fd, void* buf, size_t size)
 {
     ssize_t writed = 0;
     while (writed < size)
-        write(fd, buf + writed, size - (size_t)writed);
+        writed += write(fd, buf + writed, size - (size_t)writed);
     return writed;
 }
 
@@ -88,7 +88,7 @@ void* capture()
     while(1) {
         int ret = android_AudioIn(pOpenSL_stream, (short*) recbuf, chunk * inchannels);
         int size =write_wholy(capture_fd, recbuf, chunk * sizeof(short) * inchannels);
-//        printf("Captiring chunk %d samples %d size %d\n", num++, ret, size);
+//        printf("Capturing chunk %d samples %d size %d\n", num++, ret, size);
     }
 
     return NULL;

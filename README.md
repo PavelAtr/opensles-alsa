@@ -8,5 +8,5 @@ cp .asoundrc ~/
 
 ./opensles-alsa&
 
-aplay -D opensles frigian.wav
+aplay frigian.wav
 

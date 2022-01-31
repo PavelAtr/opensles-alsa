@@ -1,1 +1,1 @@
-/usr/bin/jackd -r -dalsa --device opensles -r44100 -p128 -n5 -i1 -o2
+/usr/bin/jackd -r -dalsa -s -r44100 -p256 -n5 -i1 -o2

@@ -1,4 +1,4 @@
-pcm.opensles {
+pcm.!default {
     type asym
     playback.pcm {
         type plug
@@ -22,6 +22,7 @@ pcm.opensles {
                 file "/dev/null"
                 infile "/run/opensles_capture"
                 slave.pcm null
+                format raw
             }
             rate 44100
             format s16_le
