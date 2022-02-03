@@ -74,6 +74,8 @@ void* capture()
     }
     printf("OpenSLES capture started\n");
 
+    int tempfd = open(CAPTURE_DEVICE, O_RDONLY);
+
     int sz;
 
     while(1) {
