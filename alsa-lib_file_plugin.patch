@@ -1,20 +1,14 @@
---- alsa-lib-1.2.4/src/pcm/pcm_null.c	2020-10-19 09:45:13.000000000 +0000
-+++ alsa-lib-1.2.4_new/src/pcm/pcm_null.c	2022-01-31 16:25:23.745773918 +0000
-@@ -388,9 +388,9 @@
- 			return -errno;
- 		}
- 	} else {
--		fd = open("/dev/full", O_RDONLY);
-+		fd = open("/dev/zero", O_RDONLY);
- 		if (fd < 0) {
--			SYSERR("Cannot open /dev/full");
-+			SYSERR("Cannot open /dev/zero");
- 			return -errno;
- 		}
- 	}
 --- alsa-lib-1.2.4/src/pcm/pcm_file.c	2020-10-19 09:45:13.000000000 +0000
-+++ alsa-lib-1.2.4_new/src/pcm/pcm_file.c	2022-01-31 16:21:36.751845379 +0000
-@@ -646,12 +646,12 @@
++++ alsa-lib-1.2.4_new/src/pcm/pcm_file.c	2022-02-04 11:20:50.078415675 +0000
+@@ -29,6 +29,7 @@
+ #include "bswap.h"
+ #include <ctype.h>
+ #include <string.h>
++#include <sys/ioctl.h>
+ #include "pcm_local.h"
+ #include "pcm_plugin.h"
+ 
+@@ -646,12 +647,12 @@
  	snd_pcm_channel_area_t areas[pcm->channels];
  	snd_pcm_sframes_t frames;
  
@@ -31,7 +25,7 @@
  	__snd_pcm_lock(pcm);
  	if (snd_pcm_file_add_frames(pcm, areas, 0, frames) < 0) {
  		__snd_pcm_unlock(pcm);
-@@ -670,12 +670,12 @@
+@@ -670,12 +671,12 @@
  	snd_pcm_channel_area_t areas[pcm->channels];
  	snd_pcm_sframes_t frames;
  
@@ -48,3 +42,30 @@
  	__snd_pcm_lock(pcm);
  	if (snd_pcm_file_add_frames(pcm, areas, 0, frames) < 0) {
  		__snd_pcm_unlock(pcm);
+@@ -724,6 +725,12 @@
+ 	if (pcm->stream != SND_PCM_STREAM_CAPTURE)
+ 		return result;
+ 
++	int sz = 0;
++	ioctl(file->ifd, FIONREAD, &sz);
++	snd_pcm_uframes_t rframes = snd_pcm_bytes_to_frames(pcm, sz);
++	if (rframes <= *frames) *frames = rframes;
++	if (*frames == 0) return result;
++
+ 	/* user may run mmap_begin without mmap_commit multiple times in row */
+ 	if (file->ifmmap_overwritten)
+ 		return result;
+--- alsa-lib-1.2.4/src/pcm/pcm_null.c	2020-10-19 09:45:13.000000000 +0000
++++ alsa-lib-1.2.4_new/src/pcm/pcm_null.c	2022-01-31 16:25:23.745773918 +0000
+@@ -388,9 +388,9 @@
+ 			return -errno;
+ 		}
+ 	} else {
+-		fd = open("/dev/full", O_RDONLY);
++		fd = open("/dev/zero", O_RDONLY);
+ 		if (fd < 0) {
+-			SYSERR("Cannot open /dev/full");
++			SYSERR("Cannot open /dev/zero");
+ 			return -errno;
+ 		}
+ 	}
