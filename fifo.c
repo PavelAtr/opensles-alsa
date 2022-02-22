@@ -17,7 +17,7 @@ int samplerate = 44100;
 int inchannels = 1;
 int outchannels = 2;
 int chunk = 128;
-int capturechunks = 1;
+int capturechunks = 6;
 
 int playback_fd = -1;
 int capture_fd = -1;
