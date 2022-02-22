@@ -36,10 +36,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define CONV16BIT 32640
 #define CONVMYFLT (1./32640.)
 
-static void* createThreadLock(void);
-static int waitThreadLock(void *lock);
-static void notifyThreadLock(void *lock);
-static void destroyThreadLock(void *lock);
 static void bqPlayerCallback(SLAndroidSimpleBufferQueueItf bq, void *context);
 static void bqRecorderCallback(SLAndroidSimpleBufferQueueItf bq, void *context);
 
@@ -331,12 +327,6 @@ OPENSL_STREAM *android_OpenAudioDevice(int sr, int inchannels, int outchannels, 
   p->inchannels = inchannels;
   p->outchannels = outchannels;
   p->sr = sr;
-  p->inlock = createThreadLock();
-  if (p->inlock == NULL)
-     return NULL;
-  p->outlock = createThreadLock();
-  if (p->outlock == NULL)
-     return NULL;
  
   if((p->outBufSamples  =  bufferframes*outchannels) != 0) {
     if((p->outputBuffer[0] = (short *) calloc(p->outBufSamples, sizeof(short))) == NULL ||
@@ -378,9 +368,6 @@ OPENSL_STREAM *android_OpenAudioDevice(int sr, int inchannels, int outchannels, 
     return NULL;
   }  
 
-  notifyThreadLock(p->outlock);
-  notifyThreadLock(p->inlock);
-
   p->time = 0.;
 
   if (p->bqPlayerBufferQueue)
@@ -402,18 +389,6 @@ void android_CloseAudioDevice(OPENSL_STREAM *p){
 
   openSLDestroyEngine(p);
 
-  if (p->inlock != NULL) {
-    notifyThreadLock(p->inlock);
-    destroyThreadLock(p->inlock);
-    p->inlock = NULL;
-  }
-    
-  if (p->outlock != NULL) {
-    notifyThreadLock(p->outlock);
-    destroyThreadLock(p->outlock);
-    p->inlock = NULL;
-  }
-    
   if (p->outputBuffer[0] != NULL) {
     free(p->outputBuffer[0]);
     p->outputBuffer[0] = NULL;
@@ -449,7 +424,7 @@ void bqRecorderCallback(SLAndroidSimpleBufferQueueItf bq, void *context)
   OPENSL_STREAM *p = (OPENSL_STREAM *) context;
 
   while ((p->inputBufferSize[0] > 0) && (p->inputBufferSize[1] > 0))
-    usleep(1000);
+    usleep(500);
 
   p->currentInputBuffer = (p->currentInputBuffer ?  0 : 1);
   int queueInputBuffer = (p->currentInputBuffer ?  0 : 1);
@@ -460,7 +435,6 @@ void bqRecorderCallback(SLAndroidSimpleBufferQueueItf bq, void *context)
 				 inBuffer, size * sizeof(short));
 
   p->inputBufferSize[queueInputBuffer] = size;
-  notifyThreadLock(p->inlock);
 }
  
 // gets a buffer of size samples from the device
@@ -474,8 +448,8 @@ int android_AudioIn(OPENSL_STREAM* p, short* buffer,int size){
   if(bufsamps ==  0) return 0;
   if (size > bufsamps) return 0;
 
-  if (p->inputBufferSize[p->currentInputBuffer] == 0)
-     waitThreadLock(p->inlock);
+  while (p->inputBufferSize[p->currentInputBuffer] == 0)
+    usleep(500);
 
   index = 0;
   inBuffer = p->inputBuffer[p->currentInputBuffer];
@@ -496,7 +470,7 @@ void bqPlayerCallback(SLAndroidSimpleBufferQueueItf bq, void *context)
   OPENSL_STREAM *p = (OPENSL_STREAM *) context;
 
   while ((p->outputBufferSize[0] == 0) && (p->outputBufferSize[1] == 0))
-    usleep(1000);
+    usleep(500);
 
   p->currentOutputBuffer = (p->currentOutputBuffer ?  0 : 1);
   int queueOutputBuffer = (p->currentOutputBuffer ?  0 : 1);
@@ -508,7 +482,6 @@ void bqPlayerCallback(SLAndroidSimpleBufferQueueItf bq, void *context)
 				 outBuffer, size * sizeof(short));
 
   p->outputBufferSize[queueOutputBuffer] = 0;
-  notifyThreadLock(p->outlock);
 }
 
 // puts a buffer of size samples to the device
@@ -522,13 +495,11 @@ int android_AudioOut(OPENSL_STREAM* p, short* buffer,int size){
   if(bufsamps ==  0) return 0;
   if (size > bufsamps) return 0;
 
-
-  if (p->outputBufferSize[p->currentOutputBuffer] != 0)
-     waitThreadLock(p->outlock);
+  while (p->outputBufferSize[p->currentOutputBuffer] != 0)
+    usleep(500);
 
   index = 0;
   outBuffer = p->outputBuffer[p->currentOutputBuffer];
-
 
   for(i=0; i < size; i++){
     outBuffer[index++] = buffer[i];
@@ -538,65 +509,4 @@ int android_AudioOut(OPENSL_STREAM* p, short* buffer,int size){
 
   p->time += (double) size/(p->sr*p->outchannels);
   return index;
-}
-
-//----------------------------------------------------------------------
-// thread Locks
-// to ensure synchronisation between callbacks and processing code
-void* createThreadLock(void)
-{
-  threadLock  *p;
-  p = (threadLock*) malloc(sizeof(threadLock));
-  if (p == NULL)
-    return NULL;
-  memset(p, 0, sizeof(threadLock));
-  if (pthread_mutex_init(&(p->m), (pthread_mutexattr_t*) NULL) != 0) {
-    free((void*) p);
-    return NULL;
-  }
-  if (pthread_cond_init(&(p->c), (pthread_condattr_t*) NULL) != 0) {
-    pthread_mutex_destroy(&(p->m));
-    free((void*) p);
-    return NULL;
-  }
-  p->s = (unsigned char) 1;
-
-  return p;
-}
-
-int waitThreadLock(void *lock)
-{
-  threadLock  *p;
-  int   retval = 0;
-  p = (threadLock*) lock;
-  pthread_mutex_lock(&(p->m));
-  p->s = (unsigned char) 0;
-  while (!p->s) {
-    pthread_cond_wait(&(p->c), &(p->m));
-  }
-  pthread_mutex_unlock(&(p->m));
-  return retval;
-}
-
-void notifyThreadLock(void *lock)
-{
-  threadLock *p;
-  p = (threadLock*) lock;
-  pthread_mutex_lock(&(p->m));
-  p->s = (unsigned char) 1;
-  pthread_cond_signal(&(p->c));
-  pthread_mutex_unlock(&(p->m));
-  return;
-}
-
-void destroyThreadLock(void *lock)
-{
-  threadLock  *p;
-  p = (threadLock*) lock;
-  if (p == NULL)
-    return;
-  notifyThreadLock(p);
-  pthread_cond_destroy(&(p->c));
-  pthread_mutex_destroy(&(p->m));
-  free(p);
 }

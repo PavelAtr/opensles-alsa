@@ -1,6 +1,6 @@
 # opensles-alsa
 
-Build with NDK:
+Build with NDK toolchain:
 
 make
 

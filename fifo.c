@@ -35,16 +35,6 @@ void closeaudio(int signum)
     loop = 0;
 }
 
-ssize_t read_wholy(int fd, void* buf, size_t size)
-{
-    ssize_t readed = 0;
-    while (readed < size)
-    {
-        readed += read(fd, buf + readed, size - (size_t)readed);
-    }
-    return readed;
-}
-
 void* playback()
 {
     int num = 0;
@@ -54,9 +44,14 @@ void* playback()
             error (errno, errno, "Cannot open playback fifo");
     }
     printf("OpenSLES playback started\n");
-    while(1) {
 
-        int size = read_wholy(playback_fd, playbuf, chunk * sizeof(short) * outchannels);
+    int sz;
+
+    while(1) {
+        sz = 0;
+        ioctl(playback_fd, FIONREAD, &sz);
+        if (sz <  chunk * sizeof(short) * outchannels) continue;
+        int size = read(playback_fd, playbuf, chunk * sizeof(short) * outchannels);
         int ret = android_AudioOut(pOpenSL_stream, (short*) playbuf, chunk * outchannels);
 //        printf("Playing chunk %d samples %d size %d fd %d\n", num++, ret, size, playback_fd);
     }
