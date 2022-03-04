@@ -6,7 +6,7 @@ make
 
 cp .asoundrc ~/
 
-./opensles-alsa -c 128 -C 4&
+LD_LIBRARY_PATH=/system/lib64:/system/apex/com.android.runtime.release/lib64 ./opensles-alsa -c 128 -C 4&
 
 aplay frigian.wav
 
