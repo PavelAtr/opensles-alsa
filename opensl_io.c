@@ -424,7 +424,7 @@ void bqRecorderCallback(SLAndroidSimpleBufferQueueItf bq, void *context)
   OPENSL_STREAM *p = (OPENSL_STREAM *) context;
 
   while ((p->inputBufferSize[0] > 0) && (p->inputBufferSize[1] > 0))
-    usleep(500);
+    usleep(1000);
 
   p->currentInputBuffer = (p->currentInputBuffer ?  0 : 1);
   int queueInputBuffer = (p->currentInputBuffer ?  0 : 1);
@@ -449,7 +449,7 @@ int android_AudioIn(OPENSL_STREAM* p, short* buffer,int size){
   if (size > bufsamps) return 0;
 
   while (p->inputBufferSize[p->currentInputBuffer] == 0)
-    usleep(500);
+    usleep(1000);
 
   index = 0;
   inBuffer = p->inputBuffer[p->currentInputBuffer];
@@ -470,7 +470,7 @@ void bqPlayerCallback(SLAndroidSimpleBufferQueueItf bq, void *context)
   OPENSL_STREAM *p = (OPENSL_STREAM *) context;
 
   while ((p->outputBufferSize[0] == 0) && (p->outputBufferSize[1] == 0))
-    usleep(500);
+    usleep(1000);
 
   p->currentOutputBuffer = (p->currentOutputBuffer ?  0 : 1);
   int queueOutputBuffer = (p->currentOutputBuffer ?  0 : 1);
@@ -496,7 +496,7 @@ int android_AudioOut(OPENSL_STREAM* p, short* buffer,int size){
   if (size > bufsamps) return 0;
 
   while (p->outputBufferSize[p->currentOutputBuffer] != 0)
-    usleep(500);
+    usleep(1000);
 
   index = 0;
   outBuffer = p->outputBuffer[p->currentOutputBuffer];

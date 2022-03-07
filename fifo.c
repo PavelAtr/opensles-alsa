@@ -17,7 +17,7 @@ int samplerate = 44100;
 int inchannels = 1;
 int outchannels = 2;
 int chunk = 128;
-int capturechunks = 6;
+int capturechunks = 4;
 
 int playback_fd = -1;
 int capture_fd = -1;
@@ -50,7 +50,11 @@ void* playback()
     while(1) {
         sz = 0;
         ioctl(playback_fd, FIONREAD, &sz);
-        if (sz <  chunk * sizeof(short) * outchannels) continue;
+        if (sz <  chunk * sizeof(short) * outchannels)
+        {
+             usleep(1000);
+             continue;
+        }
         int size = read(playback_fd, playbuf, chunk * sizeof(short) * outchannels);
         int ret = android_AudioOut(pOpenSL_stream, (short*) playbuf, chunk * outchannels);
 //        printf("Playing chunk %d samples %d size %d fd %d\n", num++, ret, size, playback_fd);
@@ -77,7 +81,11 @@ void* capture()
         int ret = android_AudioIn(pOpenSL_stream, (short*) recbuf, chunk * inchannels);
         sz = 0;
         ioctl(capture_fd, FIONREAD, &sz);
-        if (sz >=  chunk * sizeof(short) * inchannels * capturechunks) continue;
+        if (sz >=  chunk * sizeof(short) * inchannels * capturechunks)
+        {
+             usleep(1000);
+             continue;
+        }
         int size =write(capture_fd, recbuf, chunk * sizeof(short) * inchannels);
 //        printf("Capturing chunk %d samples %d size %d\n", num++, ret, size);
     }
@@ -122,7 +130,7 @@ int main(int argc, char** argv)
     pOpenSL_stream = android_OpenAudioDevice(samplerate, inchannels, outchannels, chunk);
     if (pOpenSL_stream == NULL)
        error(-1, errno, "Cannot open OpenSLES device");
-    printf("OpenSLES hardware opened %d %d-in %d-out %d-chunk %d-capture_chunks\n",
+    printf("OpenSLES hardware opened %d %d in, %d out, %d chunk size, %d capture chunks.\n",
            samplerate, inchannels, outchannels, chunk, capturechunks);
 
     mkfifo(PLAYBACK_DEVICE, S_IRWXU|S_IRWXG|S_IRWXO);
